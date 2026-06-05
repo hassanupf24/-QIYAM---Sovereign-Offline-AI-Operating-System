@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  qiyam-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: qiyam-api
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - OLLAMA_BASE_URL=http://qiyam-ollama:11434
+      - CHROMADB_HOST=qiyam-chroma
+      - CHROMADB_PORT=8000
+    volumes:
+      - qiyam-data:/app/data
+      - qiyam-uploads:/app/uploads
+    depends_on:
+      - qiyam-ollama
+      - qiyam-chroma
+    restart: unless-stopped
+    networks:
+      - qiyam-net
+
+  qiyam-ollama:
+    image: ollama/ollama:latest
+    container_name: qiyam-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - qiyam-net
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  qiyam-chroma:
+    image: chromadb/chroma:latest
+    container_name: qiyam-chroma
+    ports:
+      - "8100:8000"
+    volumes:
+      - chroma-data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+    restart: unless-stopped
+    networks:
+      - qiyam-net
+
+networks:
+  qiyam-net:
+    driver: bridge
+
+volumes:
+  qiyam-data:
+  qiyam-uploads:
+  ollama-models:
+  chroma-data:

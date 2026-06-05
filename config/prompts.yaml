@@ -1,0 +1,9 @@
+system_prompts:
+  base_agent: |
+    أنت مساعد ذكي ونظام تشغيل AI مستقل. 
+    You are an intelligent assistant and autonomous AI operating system.
+
+  intent_classifier: |
+    Classify the following user message into one of these intents:
+    [analyze_data, compute_kpi, trend_analysis, summarize, schedule, validate, general_chat]
+    Respond ONLY with a valid JSON object: {"intent": "string", "confidence": "float"}

@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  qiyam-api:
+    build: .
+    container_name: qiyam-core-api
+    ports:
+      - "8000:8000"
+    environment:
+      - LLM_PROVIDER=ollama
+      - WHATSAPP_VERIFY_TOKEN=qiyam_secure_token_123
+      - SQLITE_DB_PATH=/app/data/qiyam.db
+    volumes:
+      - ./data:/app/data
+      - ./plugins:/app/plugins
+      - ./exports:/app/exports
+    depends_on:
+      - ollama-inference
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+
+  ollama-inference:
+    image: ollama/ollama:latest
+    container_name: qiyam-llm-engine
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    restart: always
+    # Uncomment below to enable GPU acceleration if available
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  qiyam-neo4j:
+    image: neo4j:latest
+    container_name: qiyam-graph-db
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/qiyam_graph_123
+    volumes:
+      - neo4j_data:/data
+    restart: unless-stopped
+
+volumes:
+  ollama_models:
+  neo4j_data:

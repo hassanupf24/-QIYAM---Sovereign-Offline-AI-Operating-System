@@ -1,3 +1,6 @@
+import warnings
+warnings.warn("SQLiteStore is deprecated. Please migrate to PostgresStore.", DeprecationWarning, stacklevel=2)
+
 import sqlite3
 import json
 from datetime import datetime

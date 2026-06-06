@@ -79,14 +79,26 @@ class OllamaProvider:
             return response.json().get("embedding", [])
 
 class LlamaCPPProvider:
-    def __init__(self):
+    def __init__(self, tenant_id: str = None):
         try:
+            import os
             from llama_cpp import Llama
             self.model_path = f"models/{settings.LLM_MODEL}.gguf"
-            logger.info(f"Initializing LlamaCPPProvider with {self.model_path}")
+            logger.info(f"Initializing LlamaCPPProvider with {self.model_path} for tenant {tenant_id}")
+            
+            # Check for tenant specific LoRA adapter
+            lora_path = None
+            if tenant_id:
+                potential_lora = f"models/adapters/{tenant_id}/adapter_model.bin"
+                if os.path.exists(potential_lora):
+                    lora_path = potential_lora
+                    logger.info(f"Loading LoRA adapter for tenant {tenant_id}: {lora_path}")
+                    
             # Initialize with default parameters, offload to GPU if available
             self.llm = Llama(
                 model_path=self.model_path,
+                lora_path=lora_path,
+                lora_base=self.model_path if lora_path else None,
                 n_gpu_layers=-1, # Offload all to GPU if possible
                 n_ctx=4096,      # Context window
                 verbose=False
@@ -158,12 +170,12 @@ class OpenAIProvider:
                 yield chunk.choices[0].delta.content
 
 class LLMEngine:
-    def __init__(self):
+    def __init__(self, tenant_id: str = None):
         self.provider_type = settings.LLM_PROVIDER
         if self.provider_type == "ollama":
             self.provider: LLMProvider = OllamaProvider()
         elif self.provider_type == "llamacpp":
-            self.provider: LLMProvider = LlamaCPPProvider()
+            self.provider: LLMProvider = LlamaCPPProvider(tenant_id)
         elif self.provider_type == "openai":
             self.provider: LLMProvider = OpenAIProvider()
         else:

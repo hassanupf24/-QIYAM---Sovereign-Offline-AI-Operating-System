@@ -10,10 +10,13 @@ services:
       - LLM_PROVIDER=ollama
       - WHATSAPP_VERIFY_TOKEN=qiyam_secure_token_123
       - SQLITE_DB_PATH=/app/data/qiyam.db
+      - REDIS_URL=redis://qiyam-redis:6379/0
+      - DATABASE_URL=postgresql://qiyam_user:qiyam_password_123@qiyam-postgres:5432/qiyam_db
     volumes:
       - ./data:/app/data
       - ./plugins:/app/plugins
       - ./exports:/app/exports
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - ollama-inference
     restart: unless-stopped
@@ -52,6 +55,46 @@ services:
       - neo4j_data:/data
     restart: unless-stopped
 
+  qiyam-redis:
+    image: redis:alpine
+    container_name: qiyam-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  qiyam-postgres:
+    image: postgres:15-alpine
+    container_name: qiyam-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=qiyam_user
+      - POSTGRES_PASSWORD=qiyam_password_123
+      - POSTGRES_DB=qiyam_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  qiyam-celery-worker:
+    build: .
+    container_name: qiyam-celery-worker
+    command: celery -A core.worker worker --loglevel=info
+    environment:
+      - LLM_PROVIDER=ollama
+      - REDIS_URL=redis://qiyam-redis:6379/0
+      - DATABASE_URL=postgresql://qiyam_user:qiyam_password_123@qiyam-postgres:5432/qiyam_db
+    volumes:
+      - ./data:/app/data
+      - ./plugins:/app/plugins
+      - ./exports:/app/exports
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - qiyam-redis
+      - qiyam-postgres
+      - ollama-inference
+    restart: unless-stopped
+
 volumes:
   ollama_models:
   neo4j_data:
+  postgres_data:

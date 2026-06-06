@@ -6,10 +6,22 @@ pydantic>=2.7.4
 pydantic-settings>=2.3.4
 python-dotenv>=1.0.1
 pyyaml>=6.0.1
+pyjwt>=2.8.0
 
-# AI & Vector DB
+# AI & Vector DB & Agents
 chromadb>=0.5.0
 tenacity>=8.3.0
+langgraph>=0.1.19
+langchain-community>=0.2.7
+docker>=7.1.0
+
+# Message Queue & Async Tasks
+celery>=5.4.0
+redis>=5.0.7
+
+# Database
+sqlalchemy>=2.0.31
+psycopg2-binary>=2.9.9
 
 # Data Analysis
 pandas>=2.2.2
@@ -29,3 +41,24 @@ python-telegram-bot>=21.1.1
 # black>=24.4.2
 # isort>=5.13.2
 # mypy>=1.10.0
+
+# Fine-Tuning Pipeline
+transformers>=4.41.0
+peft>=0.11.1
+accelerate>=0.30.1
+bitsandbytes>=0.43.1
+trl>=0.8.6
+datasets>=2.19.1
+
+# Observability (Phase 5)
+opentelemetry-api>=1.25.0
+opentelemetry-sdk>=1.25.0
+opentelemetry-instrumentation-fastapi>=0.46b0
+opentelemetry-exporter-otlp>=1.25.0
+
+# Voice Agents (Phase 5)
+faster-whisper>=1.0.2
+pydub>=0.25.1
+
+# Federated Learning (Phase 7)
+cryptography>=42.0.0

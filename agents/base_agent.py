@@ -63,13 +63,20 @@ Current Task: {task}
             return f"Error: Tool '{action}' is not permitted for agent {self.name}."
             
         logger.info(f"Agent {self.name} executing tool '{action}' with params {params}")
-        # Implementation of actual tool dispatch will happen in the specific agents or via safe_runtime
-        # For now, return a mock result
-        return f"Mock result for tool {action}"
+        
+        if action == "os_execute":
+            # Example tool: execute in sandbox
+            from security.sandbox import Sandbox
+            sb = Sandbox()
+            cmd = params.get("command", "")
+            success, output = sb.execute_command(cmd)
+            return f"Success: {success}, Output: {output}"
+            
+        return f"Tool {action} executed. No specific handler implemented yet."
 
-    async def execute(self, session_id: str, task: str) -> str:
+    async def execute(self, session_id: str, task: str, tenant_id: str = None) -> str:
         """The core ReAct loop for the agent."""
-        logger.info(f"Executing task on {self.name} for session {session_id}")
+        logger.info(f"Executing task on {self.name} for session {session_id} in tenant {tenant_id}")
         
         max_iterations = 3
         current_task = task

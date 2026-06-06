@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 from config.logger import setup_logger
+from memory.postgres_store import PostgresStore
 
 logger = setup_logger("core.self_learning.feedback_handler")
 
@@ -17,6 +18,7 @@ class FeedbackSignal(BaseModel):
 class FeedbackHandler:
     def __init__(self):
         logger.info("Initializing Feedback Handler")
+        self.db = PostgresStore()
 
     def process_explicit_feedback(self, session_id: str, message_id: str, rating: float, comments: str = None) -> FeedbackSignal:
         """Processes direct user ratings (e.g., thumbs up/down, 5-star rating)."""
@@ -61,19 +63,33 @@ class FeedbackHandler:
 
     async def process_reaction(self, user_phone: str, message_id: str, emoji: str) -> None:
         """Processes a WhatsApp reaction (emoji) as feedback."""
-        rating = 0.5
-        # Map common emojis to ratings
+        rating = 0
+        # Map common emojis to ratings (1 for pos, -1 for neg)
         if emoji in ["👍", "❤️", "🔥", "💯", "👏", "✅"]:
-            rating = 1.0
+            rating = 1
         elif emoji in ["👎", "😡", "❌", "⛔", "🤬"]:
-            rating = 0.0
-
-        feedback = self.process_explicit_feedback(
-            session_id=user_phone,
-            message_id=message_id,
-            rating=rating,
-            comments=f"User reacted with {emoji}"
-        )
-        
-        # Here we would save this feedback to the database or trigger the adaptive optimizer
-        logger.info(f"Saved reaction feedback: Rating={feedback.rating} for message={message_id}")
+            rating = -1
+            
+        if rating == 0:
+            logger.info(f"Ignored neutral feedback emoji: {emoji}")
+            return
+            
+        user = self.db.get_user_by_phone(user_phone)
+        if not user:
+            logger.warning(f"Feedback from unknown user {user_phone} ignored.")
+            return
+            
+        try:
+            # Assuming message_id passed from webhook is our internal integer ID
+            internal_msg_id = int(message_id)
+            self.db.add_message_feedback(
+                message_id=internal_msg_id,
+                user_id=user.id,
+                tenant_id=user.tenant_id,
+                rating=rating
+            )
+            logger.info(f"Saved reaction feedback: Rating={rating} for message={message_id}")
+        except ValueError:
+            logger.error(f"Cannot parse message_id {message_id} to internal integer ID.")
+        except Exception as e:
+            logger.error(f"Failed to save message feedback: {e}")
